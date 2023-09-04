@@ -15,24 +15,19 @@ import numpy as np
 import os
 import time
 from pathlib import Path
-
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-
 import timm
-
-assert timm.__version__ == "0.3.2"  # version check
+# assert timm.__version__ == "0.3.2"  # version check
 import timm.optim.optim_factory as optim_factory
-
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-
 import models_mae
-
 from engine_pretrain import train_one_epoch
+from mae_utils import MAETransform, GEOTIFF4, SSLDataset, MAETransformDumb
 
 
 def get_args_parser():
@@ -52,6 +47,9 @@ def get_args_parser():
 
     parser.add_argument('--mask_ratio', default=0.75, type=float,
                         help='Masking ratio (percentage of removed patches).')
+
+    parser.add_argument('--in_chans', default=4, type=int,
+                        help='Image channels RGB (3) or RGB+NIR (4).')
 
     parser.add_argument('--norm_pix_loss', action='store_true',
                         help='Use (per-patch) normalized pixels as targets for computing loss')
@@ -74,6 +72,8 @@ def get_args_parser():
     # Dataset parameters
     parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
                         help='dataset path')
+    parser.add_argument('--data_list', default='/datasets01/imagenet_full_size/061417/', type=str,
+                        help='file list path')
 
     parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
@@ -120,14 +120,25 @@ def main(args):
     cudnn.benchmark = True
 
     # simple augmentation
-    transform_train = transforms.Compose([
-            transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
-    print(dataset_train)
+    # DONE: Replace these transformations with mine.
+    # transform_train = transforms.Compose([
+    #         transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    transform_train = MAETransform(args.input_size)
+    # DONE: Include my dataset to read.
+    # dataset_train = GEOTIFF4(args.data_list, args.data_path, transform=transform_train)
+    dataset_train = SSLDataset(root_dir=args.data_path,
+                               file_list=args.data_list,
+                               nbands=args.in_chans,
+                               blocksize=args.input_size,
+                               augmentations=transform_train)
+    # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
+    # print(dataset_train)
 
+    # TODO: Figure out this distributed stuff.
+    # TODO - update: might have to add arg.distributed (bool)
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
         global_rank = misc.get_rank()
@@ -144,6 +155,7 @@ def main(args):
     else:
         log_writer = None
 
+    # TODO: See if any adjustments need to be made to the DataLoader/Sampler.
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train, sampler=sampler_train,
         batch_size=args.batch_size,
@@ -153,7 +165,9 @@ def main(args):
     )
     
     # define the model
-    model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
+    # TODO: Figure out how to parse in_chans from cli to vit.
+    # TODO - update: I think it's done but let's look more into it.
+    model = models_mae.__dict__[args.model](in_chans=args.in_chans, norm_pix_loss=args.norm_pix_loss)
 
     model.to(device)
 
@@ -176,7 +190,9 @@ def main(args):
         model_without_ddp = model.module
     
     # following timm: set wd as 0 for bias and norm layers
-    param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay)
+    # TODO: See line 189 (I commented out) and 190 (I added) to see whether they do the same thing.
+    # param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay)
+    param_groups = optim_factory.param_groups_weight_decay(model_without_ddp, args.weight_decay)
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
     print(optimizer)
     loss_scaler = NativeScaler()
