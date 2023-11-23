@@ -8,27 +8,27 @@ echo "Pretraining MAE"
 # Set the variables
 # Training Parameters
 BATCH_SIZE=32
-EPOCHS=60
+EPOCHS=50
 ACCUM_ITER=1 # default
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
-INPUT_SIZE=224
-MASK_RATIO=0.3 # default 0.75
+INPUT_SIZE=96
+MASK_RATIO=0.6 # default 0.75
 IN_CHANS=4
 # Optimizer Parameters
 WEIGHT_DECAY=0.05 # default - also, w/o weight decay there's nans - network collapse probs.
 LR=10e-4
-BLR=10e-3
-MIN_LR=10e-6
-WARMUP_EPOCHS=10
+BLR=10e-4
+MIN_LR=10e-4
+WARMUP_EPOCHS=5
 # Dataset Parameters
 DATA_PATH='/home/jazib/projects/SelfSupervisedLearning/'
 DATA_LIST='/home/jazib/projects/SelfSupervisedLearning/NRW5k_filelist.txt'
-OUTPUT_DIR='./logs_outputs_aug30/'
-LOG_DIR='./logs_outputs_aug30/'
+OUTPUT_DIR='./experiment_baseline_1910/'
+LOG_DIR='./experiment_baseline_1910/'
 DEVICE='cuda' # default
-RESUME="/home/jazib/projects/mae/logs_outputs_aug30/checkpoint-39.pth"
-START_EPOCH=40
+# RESUME="/home/jazib/projects/mae/experiment_baseline_1309/checkpoint-49.pth"
+START_EPOCH=0
 NUM_WORKERS=4
 
 
@@ -52,7 +52,7 @@ python main_pretrain.py \
   --output_dir $OUTPUT_DIR \
   --log_dir $LOG_DIR \
   --device $DEVICE \
-  --resume $RESUME \
   --start_epoch $START_EPOCH \
   --num_workers $NUM_WORKERS
 
+#  --resume $RESUME \ <- add between device and start_epoch

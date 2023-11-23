@@ -132,7 +132,6 @@ def main(args):
     dataset_train = SSLDataset(root_dir=args.data_path,
                                file_list=args.data_list,
                                nbands=args.in_chans,
-                               blocksize=args.input_size,
                                augmentations=transform_train)
     # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
     # print(dataset_train)
@@ -155,7 +154,7 @@ def main(args):
     else:
         log_writer = None
 
-    # TODO: See if any adjustments need to be made to the DataLoader/Sampler.
+    # TODO: See if any adjustments need to be made to the DataLoader/Sampler. [X]
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train, sampler=sampler_train,
         batch_size=args.batch_size,
@@ -165,9 +164,9 @@ def main(args):
     )
     
     # define the model
-    # TODO: Figure out how to parse in_chans from cli to vit.
-    # TODO - update: I think it's done but let's look more into it.
-    model = models_mae.__dict__[args.model](in_chans=args.in_chans, norm_pix_loss=args.norm_pix_loss)
+    # TODO: Figure out how to parse in_chans from cli to vit. [X]
+    # TODO - update: I think it's done but let's look more into it. [X]
+    model = models_mae.__dict__[args.model](img_size=args.input_size, in_chans=args.in_chans, norm_pix_loss=args.norm_pix_loss)
 
     model.to(device)
 
@@ -190,7 +189,7 @@ def main(args):
         model_without_ddp = model.module
     
     # following timm: set wd as 0 for bias and norm layers
-    # TODO: See line 189 (I commented out) and 190 (I added) to see whether they do the same thing.
+    # TODO: See line 189 (I commented out) and 190 (I added) to see whether they do the same thing. [X]
     # param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay)
     param_groups = optim_factory.param_groups_weight_decay(model_without_ddp, args.weight_decay)
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))

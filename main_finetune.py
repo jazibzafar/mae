@@ -23,7 +23,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 import timm
 
-assert timm.__version__ == "0.3.2" # version check
+# assert timm.__version__ == "0.3.2" # version check
 from timm.models.layers import trunc_normal_
 from timm.data.mixup import Mixup
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
@@ -53,7 +53,8 @@ def get_args_parser():
 
     parser.add_argument('--input_size', default=224, type=int,
                         help='images input size')
-
+    parser.add_argument('--in_chans', default=4, type=int,
+                        help='image channels - default RGB+NIR (4).')
     parser.add_argument('--drop_path', type=float, default=0.1, metavar='PCT',
                         help='Drop path rate (default: 0.1)')
 
@@ -112,7 +113,7 @@ def get_args_parser():
     parser.add_argument('--finetune', default='',
                         help='finetune from checkpoint')
     parser.add_argument('--global_pool', action='store_true')
-    parser.set_defaults(global_pool=True)
+    parser.set_defaults(global_pool=False)
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
                         help='Use class token instead of global pool for classification')
 
@@ -121,7 +122,8 @@ def get_args_parser():
                         help='dataset path')
     parser.add_argument('--nb_classes', default=1000, type=int,
                         help='number of the classification types')
-
+    parser.add_argument('--train_ratio', type=float, default=0.8,
+                        help='Proportion of the dataset to be used for training. Rest is for validation.')
     parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
     parser.add_argument('--log_dir', default='./output_dir',
@@ -169,9 +171,9 @@ def main(args):
     np.random.seed(seed)
 
     cudnn.benchmark = True
-
-    dataset_train = build_dataset(is_train=True, args=args)
-    dataset_val = build_dataset(is_train=False, args=args)
+    # TODO: Needs to be tested.
+    dataset_train, dataset_val = build_dataset(args=args)
+    # dataset_val = build_dataset(is_train=False, args=args)
 
     if True:  # args.distributed:
         num_tasks = misc.get_world_size()
@@ -223,11 +225,13 @@ def main(args):
             mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
-    
+    # TODO: this is where model is built. in_chans go here probs.
     model = models_vit.__dict__[args.model](
+        img_size=args.input_size,
+        in_chans=args.in_chans,
         num_classes=args.nb_classes,
         drop_path_rate=args.drop_path,
-        global_pool=args.global_pool,
+        global_pool=args.global_pool
     )
 
     if args.finetune and not args.eval:

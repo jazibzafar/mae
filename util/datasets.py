@@ -16,18 +16,27 @@ from torchvision import datasets, transforms
 from timm.data import create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
+from mae_utils import MAETransform, img_loader
+from torch.utils.data import random_split
 
-def build_dataset(is_train, args):
-    transform = build_transform(is_train, args)
 
-    root = os.path.join(args.data_path, 'train' if is_train else 'val')
-    dataset = datasets.ImageFolder(root, transform=transform)
-
+def build_dataset(args):
+    # Replace below with my own MAE transform.
+    # transform = build_transform(is_train, args)
+    transform = MAETransform(args.input_size)
+    # TODO: This below is a problem. There's no train/val divide in my
+    # TODO: data. Rewrite this to read the data properly. [X] Done.
+    # root = os.path.join(args.data_path, 'train' if is_train else 'val')
+    # dataset = datasets.ImageFolder(root, transform=transform)
+    root = args.data_path
+    dataset = datasets.ImageFolder(root, transform=transform, loader=img_loader)
+    train_dataset, val_dataset = random_split(dataset, [args.train_ratio, 1-args.train_ratio])
     print(dataset)
 
-    return dataset
+    return train_dataset, val_dataset
 
-
+# TODO: Change the transforms for my data. [X] Use MAE Transform instead of this.
+# I'm not using the function below at all.
 def build_transform(is_train, args):
     mean = IMAGENET_DEFAULT_MEAN
     std = IMAGENET_DEFAULT_STD

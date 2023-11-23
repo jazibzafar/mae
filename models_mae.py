@@ -27,7 +27,7 @@ class MaskedAutoencoderViT(nn.Module):
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
                  mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False):
         super().__init__()
-
+        self.chans = in_chans
         # --------------------------------------------------------------------------
         # MAE encoder specifics
         self.patch_embed = PatchEmbed(img_size, patch_size, in_chans, embed_dim)
@@ -102,10 +102,10 @@ class MaskedAutoencoderViT(nn.Module):
 
         h = w = imgs.shape[2] // p
         # x = imgs.reshape(shape=(imgs.shape[0], 3, h, p, w, p))
-        x = imgs.reshape(shape=(imgs.shape[0], 4, h, p, w, p))
+        x = imgs.reshape(shape=(imgs.shape[0], self.chans, h, p, w, p))
         x = torch.einsum('nchpwq->nhwpqc', x)
         # x = x.reshape(shape=(imgs.shape[0], h * w, p**2 * 3))
-        x = x.reshape(shape=(imgs.shape[0], h * w, p ** 2 * 4))
+        x = x.reshape(shape=(imgs.shape[0], h * w, p ** 2 * self.chans))
         return x
 
     def unpatchify(self, x):
@@ -118,10 +118,10 @@ class MaskedAutoencoderViT(nn.Module):
         assert h * w == x.shape[1]
         
         # x = x.reshape(shape=(x.shape[0], h, w, p, p, 3))
-        x = x.reshape(shape=(x.shape[0], h, w, p, p, 4))
+        x = x.reshape(shape=(x.shape[0], h, w, p, p, self.chans))
         x = torch.einsum('nhwpqc->nchpwq', x)
         # imgs = x.reshape(shape=(x.shape[0], 3, h * p, h * p))
-        imgs = x.reshape(shape=(x.shape[0], 4, h * p, h * p))
+        imgs = x.reshape(shape=(x.shape[0], self.chans, h * p, h * p))
         return imgs
 
     def random_masking(self, x, mask_ratio):
@@ -216,8 +216,9 @@ class MaskedAutoencoderViT(nn.Module):
 
         # loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
         masked_loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
-        unmasked_loss = (loss * (1-mask)).sum() / (1-mask).sum()  # J: mean loss on kept patches
-        return masked_loss + 0.1*unmasked_loss
+        # unmasked_loss = (loss * (1-mask)).sum() / (1-mask).sum()  # J: mean loss on kept patches
+        # return masked_loss + 0.1*unmasked_loss
+        return masked_loss
 
     def forward(self, imgs, mask_ratio=0.75):
         latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
