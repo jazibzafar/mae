@@ -8,11 +8,11 @@ echo "Pretraining MAE"
 # Set the variables
 # Training Parameters
 BATCH_SIZE=32
-EPOCHS=50
+EPOCHS=20
 ACCUM_ITER=1 # default
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
-INPUT_SIZE=96
+INPUT_SIZE=224
 MASK_RATIO=0.6 # default 0.75
 IN_CHANS=4
 # Optimizer Parameters
@@ -20,12 +20,12 @@ WEIGHT_DECAY=0.05 # default - also, w/o weight decay there's nans - network coll
 LR=10e-4
 BLR=10e-4
 MIN_LR=10e-4
-WARMUP_EPOCHS=5
+WARMUP_EPOCHS=10
 # Dataset Parameters
-DATA_PATH='/home/jazib/projects/SelfSupervisedLearning/'
-DATA_LIST='/home/jazib/projects/SelfSupervisedLearning/NRW5k_filelist.txt'
-OUTPUT_DIR='./experiment_baseline_1910/'
-LOG_DIR='./experiment_baseline_1910/'
+DATA_PATH='/mnt/cluster/data_hdd/nrw_dop10/'
+DATA_LIST='/mnt/cluster/data_hdd/nrw_dop10/nrw_25k.txt'
+OUTPUT_DIR='./experiment_baseline_2411/'
+LOG_DIR='./experiment_baseline_2411/'
 DEVICE='cuda' # default
 # RESUME="/home/jazib/projects/mae/experiment_baseline_1309/checkpoint-49.pth"
 START_EPOCH=0
