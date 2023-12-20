@@ -151,10 +151,10 @@ class GeoWebDataset(IterableDataset):
         self.num_shards = num_shards
         self.imgs_per_shard = imgs_per_shard
         #
-        self.dataset = GeoWebDataset.make_dataset(self.root, self.imgs_per_shard, self.augmentations)
+        self.dataset = GeoWebDataset.make_dataset(self.root, self.augmentations, self.imgs_per_shard, self.num_shards)
 
     @staticmethod
-    def make_dataset(root_in, imgs_per_shard, augmentations):
+    def make_dataset(root_in, augmentations, imgs_per_shard, num_shards):
         dataset = wds.DataPipeline(wds.ResampledShards(root_in),
                                    wds.shuffle(8),
                                    wds.split_by_node,
@@ -164,7 +164,7 @@ class GeoWebDataset(IterableDataset):
                                    wds.map(GeoWebDataset.preprocess),
                                    wds.map(augmentations)
                                    # wds.shuffle(imgs_per_shard),
-                                   )
+                                   ).with_length(imgs_per_shard*num_shards)
         return dataset
 
     @staticmethod
