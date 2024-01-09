@@ -27,7 +27,7 @@ import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 import models_mae
 from engine_pretrain import train_one_epoch
-from mae_utils import MAETransform, GEOTIFF4, SSLDataset, MAETransformDumb
+from mae_utils import MAETransform, GEOTIFF4, SSLDataset, MAETransformDumb, GeoWebDataset
 
 
 def get_args_parser():
@@ -129,10 +129,14 @@ def main(args):
     transform_train = MAETransform(args.input_size)
     # DONE: Include my dataset to read.
     # dataset_train = GEOTIFF4(args.data_list, args.data_path, transform=transform_train)
-    dataset_train = SSLDataset(root_dir=args.data_path,
-                               file_list=args.data_list,
-                               nbands=args.in_chans,
-                               augmentations=transform_train)
+    # dataset_train = SSLDataset(root_dir=args.data_path,
+    #                            file_list=args.data_list,
+    #                            nbands=args.in_chans,
+    #                            augmentations=transform_train)
+    dataset_train = GeoWebDataset(root=args.data_path,
+                                  n_bands=args.in_chans,
+                                  augmentations=transform_train,
+                                  num_workers=args.num_workers)
     # dataset_train = datasets.ImageFolder(os.path.join(args.data_path, 'train'), transform=transform_train)
     # print(dataset_train)
 
@@ -155,8 +159,9 @@ def main(args):
         log_writer = None
 
     # TODO: See if any adjustments need to be made to the DataLoader/Sampler. [X]
+    # Iterable datasets don't need a sampler
     data_loader_train = torch.utils.data.DataLoader(
-        dataset_train, sampler=sampler_train,
+        dataset_train,  # sampler=sampler_train, <- iterable dataset no need for a sampler
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         pin_memory=args.pin_mem,

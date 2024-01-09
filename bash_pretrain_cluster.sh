@@ -7,8 +7,8 @@ echo "Pretraining MAE"
 
 # Set the variables
 # Training Parameters
-BATCH_SIZE=32
-EPOCHS=20
+BATCH_SIZE=128
+EPOCHS=50
 ACCUM_ITER=1 # default
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
@@ -22,14 +22,14 @@ BLR=10e-4
 MIN_LR=10e-4
 WARMUP_EPOCHS=10
 # Dataset Parameters
-DATA_PATH='/mnt/cluster/data_hdd/nrw_dop10/'
+DATA_PATH='/data_hdd/nrw_dop10/nrw_dop10_tars/nrw_dop10-{0000..0099}.tar'
 DATA_LIST='/mnt/cluster/data_hdd/nrw_dop10/nrw_25k.txt'
-OUTPUT_DIR='./experiment_baseline_2411/'
-LOG_DIR='./experiment_baseline_2411/'
+OUTPUT_DIR='./experiment_baseline_050124/'
+LOG_DIR='./experiment_baseline_050124/'
 DEVICE='cuda' # default
-# RESUME="/home/jazib/projects/mae/experiment_baseline_1309/checkpoint-49.pth"
+RESUME="/home/jazib/projects/mae/experiment_baseline_050124/checkpoint-19.pth"
 START_EPOCH=0
-NUM_WORKERS=4
+NUM_WORKERS=1
 
 
 
@@ -52,6 +52,7 @@ python main_pretrain.py \
   --output_dir $OUTPUT_DIR \
   --log_dir $LOG_DIR \
   --device $DEVICE \
+  --resume $RESUME \
   --start_epoch $START_EPOCH \
   --num_workers $NUM_WORKERS
 

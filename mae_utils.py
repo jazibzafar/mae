@@ -139,7 +139,7 @@ class GeoWebDataset(IterableDataset):
                  root,
                  n_bands,
                  augmentations,
-                 num_workers=4,
+                 num_workers=1,
                  num_nodes=1,
                  num_shards=100,
                  imgs_per_shard=250):
@@ -162,9 +162,9 @@ class GeoWebDataset(IterableDataset):
                                    wds.tarfile_to_samples(),
                                    wds.to_tuple("tif"),
                                    wds.map(GeoWebDataset.preprocess),
-                                   wds.map(augmentations)
-                                   # wds.shuffle(imgs_per_shard),
-                                   ).with_length(imgs_per_shard*num_shards)
+                                   wds.map(augmentations),
+                                   wds.shuffle(100)  # buffer of size 100
+                                   ).with_epoch(nsamples=imgs_per_shard*num_shards)
         return dataset
 
     @staticmethod
