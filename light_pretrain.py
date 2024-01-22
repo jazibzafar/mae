@@ -4,6 +4,8 @@ import models_mae
 import torch
 from mae_utils import MAETransform, GeoWebDataset
 import timm.optim.optim_factory as optim_factory
+from pathlib import Path
+
 import logging
 
 
@@ -68,6 +70,7 @@ def get_args_parser():
 class LitModel(L.LightningModule):
     def __init__(self, model, mask_ratio, weight_decay, lr):
         super().__init__()
+        self.save_hyperparameters()
         self.model = model
         self.mask_ratio = mask_ratio
         self.weight_decay = weight_decay
@@ -109,14 +112,16 @@ def main(args):
     # TODO: checkpoint even n training steps.
     # TODO: train for a total of N training steps.
     print("beginning training")
-    trainer = L.Trainer(accelerator='gpu', devices=1, max_epochs=-1)
+    # max_epochs = -1 for epoch less training
+    trainer = L.Trainer(accelerator='gpu', devices=1, max_epochs=args.epochs, default_root_dir=args.output_dir)
     trainer.fit(model=masked_autoencoder, train_dataloaders=dataloader_train)
+
 
 if __name__ == '__main__':
     args = get_args_parser()
     args = args.parse_args()
-    # if args.output_dir:
-    #     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    if args.output_dir:
+        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     main(args)
 
 
