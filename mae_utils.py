@@ -150,22 +150,20 @@ class GeoWebDataset(IterableDataset):
         self.num_nodes = num_nodes
         self.num_shards = num_shards
         self.imgs_per_shard = imgs_per_shard
+        self.cropsize = 224
         #
-        self.dataset = GeoWebDataset.make_dataset(self.root, self.augmentations, self.imgs_per_shard, self.num_shards)
-
-    @staticmethod
-    def make_dataset(root_in, augmentations, imgs_per_shard, num_shards):
-        dataset = wds.DataPipeline(wds.ResampledShards(root_in),
-                                   wds.shuffle(8),
-                                   wds.split_by_node,
-                                   wds.split_by_worker,
-                                   wds.tarfile_to_samples(),
-                                   wds.to_tuple("tif"),
-                                   wds.map(GeoWebDataset.preprocess),
-                                   wds.map(augmentations),
-                                   wds.shuffle(100)  # buffer of size 100
-                                   ).with_epoch(nsamples=imgs_per_shard*num_shards)
-        return dataset
+        self.num_patches = 1000000000000  # set it to sth really high for now, so that the generator doesnt get exhausted during trainng
+        self.dataset = wds.DataPipeline(wds.ResampledShards(self.root),
+                                        wds.shuffle(8),
+                                        wds.split_by_node,
+                                        wds.split_by_worker,
+                                        wds.tarfile_to_samples(),
+                                        wds.to_tuple("tif"),
+                                        wds.map(GeoWebDataset.preprocess),
+                                        self.slicer,
+                                        wds.shuffle(100),  # buffer of size 100
+                                        wds.map(self.augmentations)
+                                        ).with_length(self.num_patches)
 
     @staticmethod
     def read_geotif_from_bytestream(data: bytes) -> np.ndarray:
@@ -188,6 +186,16 @@ class GeoWebDataset(IterableDataset):
     @staticmethod
     def preprocess(sample):
         return GeoWebDataset.read_geotif_from_bytestream(sample[0])
+
+    @staticmethod
+    def slice_image(samples, tilesize: int):
+        for img in samples:
+            for y in range(0, img.shape[1], tilesize):
+                for x in range(0, img.shape[2], tilesize):
+                    yield img[:, y:y + tilesize, x:x + tilesize]  # CHW
+
+    def slicer(self, img):
+        return GeoWebDataset.slice_image(img, self.cropsize)
 
     def __iter__(self):
         return iter(self.dataset)

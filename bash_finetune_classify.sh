@@ -17,12 +17,12 @@ BLR=10e-4
 MIN_LR=10e-4
 # Fine tuning parameters
 # Dataset parameters
-FINETUNE_PATH="/home/jazib/projects/mae/experiment_baseline_1309/checkpoint-99.pth"
+FINETUNE_PATH="/home/jazib/projects/mae/experiment_baseline_080124/checkpoint-49.pth"
 DATA_PATH="/home/jazib/projects/SelfSupervisedLearning/species_classification/"
-TRAIN_RATIO=0.8
+TRAIN_RATIO=0.1
 # NB_CLASSES=10
-OUTPUT_DIR="/home/jazib/projects/mae/lineval_class_2410e/"
-LOG_DIR="/home/jazib/projects/mae/lineval_class_2410e/"
+OUTPUT_DIR="/home/jazib/projects/mae/finetune_class_080124b/"
+LOG_DIR="/home/jazib/projects/mae/finetune_class_080124b/"
 # RESUME="/home/jazib/projects/mae/finetune_class_2410d/checkpoint-49.pth"
 START_EPOCH=0
 DEVICE="cuda"
