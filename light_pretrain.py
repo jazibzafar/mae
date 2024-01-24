@@ -5,6 +5,7 @@ import torch
 from mae_utils import MAETransform, GeoWebDataset
 import timm.optim.optim_factory as optim_factory
 from pathlib import Path
+from lightning.pytorch.callbacks import ModelCheckpoint
 
 import logging
 
@@ -14,7 +15,9 @@ def get_args_parser():
 
     parser.add_argument('--batch_size', default=64, type=int,
                         help='Batch size per GPU (effective batch size is batch_size * accum_iter * # gpus')
-    parser.add_argument('--epochs', default=400, type=int)
+    # parser.add_argument('--epochs', default=400, type=int)
+    parser.add_argument('--start_step', default=0, type=int)
+    parser.add_argument('--max_steps', default=250000, type=int)
     parser.add_argument('--accum_iter', default=1, type=int,
                         help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
 
@@ -45,8 +48,9 @@ def get_args_parser():
     parser.add_argument('--min_lr', type=float, default=0., metavar='LR',
                         help='lower lr bound for cyclic schedulers that hit 0')
 
-    parser.add_argument('--warmup_epochs', type=int, default=40, metavar='N',
-                        help='epochs to warmup LR')
+    # TODO: When adding an LR scheduler you can probably have warmup steps.
+    # parser.add_argument('--warmup_epochs', type=int, default=40, metavar='N',
+    #                     help='epochs to warmup LR')
 
     # Dataset parameters
     parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
@@ -60,8 +64,8 @@ def get_args_parser():
                         help='path where to tensorboard log')
     parser.add_argument('--resume', default='',
                         help='resume from checkpoint')
-    parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
-                        help='start epoch')
+    # parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
+    #                     help='start epoch')
     parser.add_argument('--num_workers', default=10, type=int)
     return parser
 
@@ -70,11 +74,12 @@ def get_args_parser():
 class LitModel(L.LightningModule):
     def __init__(self, model, mask_ratio, weight_decay, lr):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['model'])
         self.model = model
         self.mask_ratio = mask_ratio
         self.weight_decay = weight_decay
         self.lr = lr
+        self.log(on_step=True, on_epoch=False)
 
     def training_step(self, batch):
         # Training step defines the train loop.
@@ -90,6 +95,7 @@ class LitModel(L.LightningModule):
 
 
 def main(args):
+    # Data and transforms
     transform_train = MAETransform(args.input_size)
 
     dataset_train = GeoWebDataset(root=args.data_path,
@@ -104,17 +110,29 @@ def main(args):
         # drop_last=True,
     )
 
+    # Models
     model = models_mae.__dict__[args.model](img_size=args.input_size,
                                             in_chans=args.in_chans,
                                             norm_pix_loss=args.norm_pix_loss)
 
     masked_autoencoder = LitModel(model, args.mask_ratio, args.weight_decay, args.lr)
-    # TODO: checkpoint even n training steps.
-    # TODO: train for a total of N training steps.
-    print("beginning training")
-    # max_epochs = -1 for epoch less training
-    trainer = L.Trainer(accelerator='gpu', devices=1, max_epochs=args.epochs, default_root_dir=args.output_dir)
-    trainer.fit(model=masked_autoencoder, train_dataloaders=dataloader_train)
+
+    # Callbacks
+    checkpoint_callback = ModelCheckpoint(dirpath=args.output_dir,
+                                          every_n_train_steps=100000)
+
+    # Trainer and Training
+    trainer = L.Trainer(accelerator='gpu',
+                        max_steps=args.max_steps,
+                        log_every_n_steps=2000,
+                        default_root_dir=args.output_dir,
+                        enable_progress_bar=False,
+                        callbacks=[checkpoint_callback()])
+
+    if args.resume:
+        trainer.fit(model=masked_autoencoder, train_dataloaders=dataloader_train, ckpt_path=args.resume)
+    else:
+        trainer.fit(model=masked_autoencoder, train_dataloaders=dataloader_train)
 
 
 if __name__ == '__main__':

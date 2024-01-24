@@ -8,7 +8,7 @@ echo "Pretraining MAE"
 # Set the variables
 # Training Parameters
 BATCH_SIZE=32
-EPOCHS=50
+EPOCHS=5
 ACCUM_ITER=1 # default
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
@@ -22,14 +22,14 @@ BLR=10e-4
 MIN_LR=10e-4
 WARMUP_EPOCHS=10
 # Dataset Parameters
-DATA_PATH='/home/jazib/projects/SelfSupervisedLearning/nrw_3.tar'
+DATA_PATH='/data_hdd/nrw_dop10/nrw_dop10_tars/nrw_dop10-{0000..0099}.tar'
 DATA_LIST='/mnt/cluster/data_hdd/nrw_dop10/nrw_25k.txt'
-OUTPUT_DIR='./experiment_baseline_180124/'
-LOG_DIR='./experiment_baseline_180124/'
+OUTPUT_DIR='./experiment_baseline_220124/'
+LOG_DIR='./experiment_baseline_220124/'
 DEVICE='cuda' # default
 RESUME="/home/jazib/projects/mae/experiment_baseline_050124/checkpoint-19.pth"
 START_EPOCH=0
-NUM_WORKERS=1
+NUM_WORKERS=4
 
 
 
