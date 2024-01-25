@@ -8,7 +8,7 @@ echo "Pretraining MAE"
 # Set the variables
 # Training Parameters
 BATCH_SIZE=32
-EPOCHS=5
+MAX_STEPS=5000
 ACCUM_ITER=1 # default
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
@@ -20,15 +20,15 @@ WEIGHT_DECAY=0.05 # default - also, w/o weight decay there's nans - network coll
 LR=10e-4
 BLR=10e-4
 MIN_LR=10e-4
-WARMUP_EPOCHS=10
+#WARMUP_EPOCHS=10
 # Dataset Parameters
 DATA_PATH='/data_hdd/nrw_dop10/nrw_dop10_tars/nrw_dop10-{0000..0099}.tar'
 DATA_LIST='/mnt/cluster/data_hdd/nrw_dop10/nrw_25k.txt'
-OUTPUT_DIR='./experiment_baseline_220124/'
-LOG_DIR='./experiment_baseline_220124/'
+OUTPUT_DIR='./experiment_test_250124/'
+LOG_DIR='./experiment_test_250124/'
 DEVICE='cuda' # default
 RESUME="/home/jazib/projects/mae/experiment_baseline_050124/checkpoint-19.pth"
-START_EPOCH=0
+#START_EPOCH=0
 NUM_WORKERS=4
 
 
@@ -36,7 +36,7 @@ NUM_WORKERS=4
 # Run the python script
 python light_pretrain.py \
   --batch_size $BATCH_SIZE \
-  --epochs $EPOCHS \
+  --max_steps $MAX_STEPS \
   --accum_iter $ACCUM_ITER \
   --model $MODEL \
   --input_size $INPUT_SIZE \
@@ -46,12 +46,10 @@ python light_pretrain.py \
   --lr $LR \
   --blr $BLR \
   --min_lr $MIN_LR \
-  --warmup_epochs $WARMUP_EPOCHS \
   --data_path $DATA_PATH \
   --data_list $DATA_LIST \
   --output_dir $OUTPUT_DIR \
   --log_dir $LOG_DIR \
-  --start_epoch $START_EPOCH \
   --num_workers $NUM_WORKERS
 
 #  --resume $RESUME \ <- add between device and start_epoch

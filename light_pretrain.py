@@ -1,3 +1,4 @@
+import sys
 import argparse
 import lightning as L
 import models_mae
@@ -9,6 +10,13 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 
 import logging
 
+logger = logging.getLogger('lightning')
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('[%(levelname)8s] %(message)s')
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
 
 def get_args_parser():
     parser = argparse.ArgumentParser('MAE pre-training', add_help=False)
@@ -17,7 +25,7 @@ def get_args_parser():
                         help='Batch size per GPU (effective batch size is batch_size * accum_iter * # gpus')
     # parser.add_argument('--epochs', default=400, type=int)
     parser.add_argument('--start_step', default=0, type=int)
-    parser.add_argument('--max_steps', default=250000, type=int)
+    parser.add_argument('--max_steps', default=5000, type=int)
     parser.add_argument('--accum_iter', default=1, type=int,
                         help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
 
@@ -79,13 +87,21 @@ class LitModel(L.LightningModule):
         self.mask_ratio = mask_ratio
         self.weight_decay = weight_decay
         self.lr = lr
-        self.log(on_step=True, on_epoch=False)
+        # self.log(on_step=True, on_epoch=False)
 
     def training_step(self, batch):
         # Training step defines the train loop.
         # It is independent of forward calls.
         loss, _, _ = self.model(batch, mask_ratio=self.mask_ratio)
         self.log("train_loss", loss)
+        # self.log("learning_rate", self.lr)
+        msgs = [
+            f"Step {self.global_step}",
+            f"Loss {loss}"
+        ]
+
+        if self.global_step % 50 == 0:
+            logger.debug("|".join(msgs))
         return loss
 
     def configure_optimizers(self):
@@ -127,7 +143,7 @@ def main(args):
                         log_every_n_steps=2000,
                         default_root_dir=args.output_dir,
                         enable_progress_bar=False,
-                        callbacks=[checkpoint_callback()])
+                        callbacks=[checkpoint_callback])
 
     if args.resume:
         trainer.fit(model=masked_autoencoder, train_dataloaders=dataloader_train, ckpt_path=args.resume)
