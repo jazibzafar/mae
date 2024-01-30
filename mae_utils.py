@@ -139,7 +139,7 @@ class GeoWebDataset(IterableDataset):
                  root,
                  n_bands,
                  augmentations,
-                 num_workers=1,
+                 num_workers,
                  num_nodes=1,
                  num_shards=100,
                  imgs_per_shard=250):

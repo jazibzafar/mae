@@ -117,7 +117,8 @@ def main(args):
     dataset_train = GeoWebDataset(root=args.data_path,
                                   n_bands=args.in_chans,
                                   augmentations=transform_train,
-                                  num_workers=args.num_workers)
+                                  # num_workers=args.num_workers)
+                                  num_workers=19)
 
     dataloader_train = torch.utils.data.DataLoader(
         dataset_train,
