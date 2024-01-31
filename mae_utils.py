@@ -156,13 +156,13 @@ class GeoWebDataset(IterableDataset):
         self.dataset = wds.DataPipeline(wds.ResampledShards(self.root),
                                         wds.shuffle(8),
                                         wds.split_by_node,
-                                        wds.split_by_worker,
                                         wds.tarfile_to_samples(),
                                         wds.to_tuple("tif"),
                                         wds.map(GeoWebDataset.preprocess),
                                         self.slicer,
                                         wds.shuffle(100),  # buffer of size 100
-                                        wds.map(self.augmentations)
+                                        wds.map(self.augmentations),
+                                        wds.split_by_worker,
                                         ).with_length(self.num_patches)
 
     @staticmethod
@@ -200,8 +200,8 @@ class GeoWebDataset(IterableDataset):
     def __iter__(self):
         return iter(self.dataset)
 
-    def __len__(self):
-        return self.imgs_per_shard * self.num_shards
+    # def __len__(self):
+    #     return self.imgs_per_shard * self.num_shards
 
 
 # Some random functions useful for visualization

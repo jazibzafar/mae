@@ -7,8 +7,8 @@ echo "Pretraining MAE"
 
 # Set the variables
 # Training Parameters
-BATCH_SIZE=32
-MAX_STEPS=5000
+BATCH_SIZE=128
+MAX_STEPS=100000
 ACCUM_ITER=1 # default
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
@@ -24,12 +24,12 @@ MIN_LR=10e-4
 # Dataset Parameters
 DATA_PATH='/data_hdd/nrw_dop10/nrw_dop10_tars/nrw_dop10-{0000..0099}.tar'
 DATA_LIST='/mnt/cluster/data_hdd/nrw_dop10/nrw_25k.txt'
-OUTPUT_DIR='./experiment_test_250124/'
-LOG_DIR='./experiment_test_250124/'
+OUTPUT_DIR='./experiment_test_300124/'
+LOG_DIR='./experiment_test_300124/'
 DEVICE='cuda' # default
 RESUME="/home/jazib/projects/mae/experiment_baseline_050124/checkpoint-19.pth"
 #START_EPOCH=0
-NUM_WORKERS=4
+NUM_WORKERS=19
 
 
 

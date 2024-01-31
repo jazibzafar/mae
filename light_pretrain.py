@@ -7,15 +7,16 @@ from mae_utils import MAETransform, GeoWebDataset
 import timm.optim.optim_factory as optim_factory
 from pathlib import Path
 from lightning.pytorch.callbacks import ModelCheckpoint
+import time
 
 import logging
 
-logger = logging.getLogger('lightning')
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('[%(levelname)8s] %(message)s')
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+# logger = logging.getLogger('lightning')
+# logger.setLevel(logging.DEBUG)
+# formatter = logging.Formatter('[%(levelname)8s] %(message)s')
+# console_handler = logging.StreamHandler(sys.stdout)
+# console_handler.setFormatter(formatter)
+# logger.addHandler(console_handler)
 
 
 def get_args_parser():
@@ -95,13 +96,13 @@ class LitModel(L.LightningModule):
         loss, _, _ = self.model(batch, mask_ratio=self.mask_ratio)
         self.log("train_loss", loss)
         # self.log("learning_rate", self.lr)
-        msgs = [
-            f"Step {self.global_step}",
-            f"Loss {loss}"
-        ]
-
-        if self.global_step % 50 == 0:
-            logger.debug("|".join(msgs))
+        # msgs = [
+        #     f"Step {self.global_step}",
+        #     f"Loss {loss}"
+        # ]
+        #
+        # if self.global_step % 50 == 0:
+        #     logger.debug("|".join(msgs))
         return loss
 
     def configure_optimizers(self):
@@ -136,20 +137,24 @@ def main(args):
 
     # Callbacks
     checkpoint_callback = ModelCheckpoint(dirpath=args.output_dir,
-                                          every_n_train_steps=100000)
+                                          every_n_train_steps=50000)
 
     # Trainer and Training
     trainer = L.Trainer(accelerator='gpu',
                         max_steps=args.max_steps,
-                        log_every_n_steps=2000,
+                        log_every_n_steps=200,
                         default_root_dir=args.output_dir,
-                        enable_progress_bar=False,
+                        # enable_progress_bar=False,
                         callbacks=[checkpoint_callback])
 
+    print("beginning the training.")
+    start = time.time()
     if args.resume:
         trainer.fit(model=masked_autoencoder, train_dataloaders=dataloader_train, ckpt_path=args.resume)
     else:
         trainer.fit(model=masked_autoencoder, train_dataloaders=dataloader_train)
+    end = time.time()
+    print(f"training completed. Elapsed time {end - start} seconds.")
 
 
 if __name__ == '__main__':
