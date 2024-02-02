@@ -204,6 +204,18 @@ class GeoWebDataset(IterableDataset):
     #     return self.imgs_per_shard * self.num_shards
 
 
+class FakeDataset(Dataset):
+    def __init__(self, shape, length):
+        self.data = np.zeros(shape, dtype=np.float32)
+        self.length = length
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, item):
+        return self.data
+
+
 # Some random functions useful for visualization
 def to_rgb(img_in, mode='CHW'):
     if mode == 'CHW':

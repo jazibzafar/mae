@@ -3,10 +3,10 @@ import argparse
 import lightning as L
 import models_mae
 import torch
-from mae_utils import MAETransform, GeoWebDataset
+from mae_utils import MAETransform, GeoWebDataset, FakeDataset
 import timm.optim.optim_factory as optim_factory
 from pathlib import Path
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, DeviceStatsMonitor
 import time
 
 import logging
@@ -115,11 +115,14 @@ def main(args):
     # Data and transforms
     transform_train = MAETransform(args.input_size)
 
-    dataset_train = GeoWebDataset(root=args.data_path,
-                                  n_bands=args.in_chans,
-                                  augmentations=transform_train,
-                                  # num_workers=args.num_workers)
-                                  num_workers=19)
+    # dataset_train = GeoWebDataset(root=args.data_path,
+    #                               n_bands=args.in_chans,
+    #                               augmentations=transform_train,
+    #                               # num_workers=args.num_workers)
+    #                               num_workers=19)
+
+    dataset_train = FakeDataset((4, 224, 224), 1280)
+
 
     dataloader_train = torch.utils.data.DataLoader(
         dataset_train,
@@ -137,15 +140,16 @@ def main(args):
 
     # Callbacks
     checkpoint_callback = ModelCheckpoint(dirpath=args.output_dir,
-                                          every_n_train_steps=50000)
+                                          every_n_train_steps=500)
 
     # Trainer and Training
     trainer = L.Trainer(accelerator='gpu',
                         max_steps=args.max_steps,
                         log_every_n_steps=200,
                         default_root_dir=args.output_dir,
+                        profiler="simple",
                         # enable_progress_bar=False,
-                        callbacks=[checkpoint_callback])
+                        callbacks=[checkpoint_callback, DeviceStatsMonitor()])
 
     print("beginning the training.")
     start = time.time()
