@@ -10,6 +10,8 @@ import rasterio
 import webdataset as wds
 from osgeo import gdal
 import matplotlib.pyplot as plt
+from torch.utils.data import get_worker_info
+from itertools import islice
 
 
 def img_loader(path):
@@ -198,7 +200,15 @@ class GeoWebDataset(IterableDataset):
         return GeoWebDataset.slice_image(img, self.cropsize)
 
     def __iter__(self):
-        return iter(self.dataset)
+        worker_info = get_worker_info()
+        worker_num = worker_info.num_workers
+        worker_id = worker_info.id
+        if worker_info is None:
+            return iter(self.data)
+        else:
+            sliced_data = islice(self.data, worker_id, None, worker_num)
+            return iter(sliced_data)
+        # return iter(self.dataset)
 
     # def __len__(self):
     #     return self.imgs_per_shard * self.num_shards
