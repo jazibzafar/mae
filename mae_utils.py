@@ -155,16 +155,19 @@ class GeoWebDataset(IterableDataset):
         self.cropsize = 224
         #
         self.num_patches = 1000000000000  # set it to sth really high for now, so that the generator doesnt get exhausted during trainng
+
         self.dataset = wds.DataPipeline(wds.ResampledShards(self.root),
-                                        wds.shuffle(8),
                                         wds.split_by_node,
+                                        wds.split_by_worker,
+                                        self.split_by_dataloader_worker,
+                                        # self.printer,
+                                        wds.shuffle(8),
                                         wds.tarfile_to_samples(),
                                         wds.to_tuple("tif"),
                                         wds.map(GeoWebDataset.preprocess),
                                         self.slicer,
                                         wds.shuffle(100),  # buffer of size 100
                                         wds.map(self.augmentations),
-                                        wds.split_by_worker,
                                         ).with_length(self.num_patches)
 
     @staticmethod
@@ -196,22 +199,33 @@ class GeoWebDataset(IterableDataset):
                 for x in range(0, img.shape[2], tilesize):
                     yield img[:, y:y + tilesize, x:x + tilesize]  # CHW
 
+    @staticmethod
+    def split_by_dataloader_worker(iterable):
+        worker_info = get_worker_info()
+        print("Worker info: ", worker_info)
+        if worker_info is None:
+            return iterable
+        else:
+            worker_num = worker_info.num_workers
+            worker_id = worker_info.id
+            sliced_data = islice(iterable, worker_id, None, worker_num)
+            return sliced_data
+
+    @staticmethod
+    def printer(iterable):
+        for x in iterable:
+            print("From node X, worker Y, dataloader worker Z: ")
+            print(x)
+            yield x
+
     def slicer(self, img):
         return GeoWebDataset.slice_image(img, self.cropsize)
 
     def __iter__(self):
-        worker_info = get_worker_info()
-        worker_num = worker_info.num_workers
-        worker_id = worker_info.id
-        if worker_info is None:
-            return iter(self.data)
-        else:
-            sliced_data = islice(self.data, worker_id, None, worker_num)
-            return iter(sliced_data)
-        # return iter(self.dataset)
+        return iter(self.dataset)
 
-    # def __len__(self):
-    #     return self.imgs_per_shard * self.num_shards
+    def __len__(self):
+        return self.imgs_per_shard * self.num_shards
 
 
 class FakeDataset(Dataset):
