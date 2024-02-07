@@ -3,11 +3,14 @@ import argparse
 import lightning as L
 import models_mae
 import torch
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from mae_utils import MAETransform, GeoWebDataset, FakeDataset
 import timm.optim.optim_factory as optim_factory
 from pathlib import Path
 from lightning.pytorch.callbacks import ModelCheckpoint, DeviceStatsMonitor, LearningRateMonitor
+from lightning.pytorch.loggers import TensorBoardLogger
 import time
+
 
 import logging
 
@@ -25,10 +28,9 @@ def get_args_parser():
     parser.add_argument('--batch_size', default=64, type=int,
                         help='Batch size per GPU (effective batch size is batch_size * accum_iter * # gpus')
     # parser.add_argument('--epochs', default=400, type=int)
-    parser.add_argument('--start_step', default=0, type=int)
     parser.add_argument('--max_steps', default=5000, type=int)
-    parser.add_argument('--accum_iter', default=1, type=int,
-                        help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
+    # parser.add_argument('--accum_iter', default=1, type=int,
+    #                     help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints)')
 
     # Model parameters
     parser.add_argument('--model', default='mae_vit_large_patch16', type=str, metavar='MODEL',
@@ -64,13 +66,13 @@ def get_args_parser():
     # Dataset parameters
     parser.add_argument('--data_path', default='/datasets01/imagenet_full_size/061417/', type=str,
                         help='dataset path')
-    parser.add_argument('--data_list', default='/datasets01/imagenet_full_size/061417/', type=str,
-                        help='file list path')
+    # parser.add_argument('--data_list', default='/datasets01/imagenet_full_size/061417/', type=str,
+    #                     help='file list path')
 
     parser.add_argument('--output_dir', default='./output_dir',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='./output_dir',
-                        help='path where to tensorboard log')
+    # parser.add_argument('--log_dir', default='./output_dir',
+    #                     help='path where to tensorboard log')
     parser.add_argument('--resume', default='',
                         help='resume from checkpoint')
     # parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
@@ -108,7 +110,17 @@ class LitModel(L.LightningModule):
     def configure_optimizers(self):
         param_groups = optim_factory.param_groups_weight_decay(self.model, self.weight_decay)
         optimizer = torch.optim.AdamW(param_groups, lr=self.lr, betas=(0.9, 0.95))
-        return optimizer
+        scheduler = CosineAnnealingWarmRestarts(optimizer=optimizer,
+                                                T_0=500,
+                                                T_mult=2)
+        dict_out = {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "train_loss"
+            }
+        }
+        return dict_out
 
 
 def main(args):
@@ -117,18 +129,13 @@ def main(args):
 
     dataset_train = GeoWebDataset(root=args.data_path,
                                   n_bands=args.in_chans,
-                                  augmentations=transform_train,
-                                  num_workers=0)
-
-    # dataset_train = FakeDataset((4, 224, 224), 1280)
+                                  augmentations=transform_train)
 
     dataloader_train = torch.utils.data.DataLoader(
         dataset_train,
         batch_size=args.batch_size,
         pin_memory=True,
-        num_workers=args.num_workers
-        # drop_last=True,
-    )
+        num_workers=args.num_workers)
 
     # Models
     model = models_mae.__dict__[args.model](img_size=args.input_size,
@@ -139,17 +146,22 @@ def main(args):
 
     # Callbacks
     checkpoint_callback = ModelCheckpoint(dirpath=args.output_dir,
-                                          every_n_train_steps=500)
+                                          every_n_train_steps=int(args.max_steps/3))
+    lr_callback = LearningRateMonitor(logging_interval="step")
+
+    # Logger
+    logger = TensorBoardLogger(save_dir=args.output_dir,
+                               name="")
 
     # Trainer and Training
     trainer = L.Trainer(accelerator='gpu',
                         max_steps=args.max_steps,
-                        enable_progress_bar=False,
-                        log_every_n_steps=200,
+                        log_every_n_steps=10,
                         default_root_dir=args.output_dir,
                         profiler="simple",
-                        # enable_progress_bar=False,
-                        callbacks=[checkpoint_callback, LearningRateMonitor()])
+                        enable_progress_bar=True,
+                        logger=logger,
+                        callbacks=[checkpoint_callback, lr_callback])
 
     print("beginning the training.")
     start = time.time()

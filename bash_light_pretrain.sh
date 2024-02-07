@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-#SBATCH -w node5
+# #SBATCH -w node5
 
 echo "Pretraining MAE"
 
@@ -10,8 +10,7 @@ echo "Pretraining MAE"
 # Set the variables
 # Training Parameters
 BATCH_SIZE=128
-MAX_STEPS=12800
-ACCUM_ITER=1 # default
+MAX_STEPS=5000
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
 INPUT_SIZE=224
@@ -25,9 +24,7 @@ MIN_LR=10e-4
 #WARMUP_EPOCHS=10
 # Dataset Parameters
 DATA_PATH='/data_local_ssd/nrw_dop10_tars/nrw_dop10-{0000..0099}.tar'
-DATA_LIST='/mnt/cluster/data_hdd/nrw_dop10/nrw_25k.txt'
-OUTPUT_DIR='./experiment_test_060224/'
-LOG_DIR='./experiment_test_060224/'
+OUTPUT_DIR='./experiment_test_070224/'
 DEVICE='cuda' # default
 RESUME="/home/jazib/projects/mae/experiment_baseline_050124/checkpoint-19.pth"
 #START_EPOCH=0
@@ -36,10 +33,10 @@ NUM_WORKERS=4
 
 
 # Run the python script
-srun python light_pretrain.py \
+#srun
+python light_pretrain.py \
   --batch_size $BATCH_SIZE \
   --max_steps $MAX_STEPS \
-  --accum_iter $ACCUM_ITER \
   --model $MODEL \
   --input_size $INPUT_SIZE \
   --mask_ratio $MASK_RATIO \
@@ -49,9 +46,7 @@ srun python light_pretrain.py \
   --blr $BLR \
   --min_lr $MIN_LR \
   --data_path $DATA_PATH \
-  --data_list $DATA_LIST \
   --output_dir $OUTPUT_DIR \
-  --log_dir $LOG_DIR \
   --num_workers $NUM_WORKERS
 
 #  --resume $RESUME \ <- add between device and start_epoch

@@ -141,14 +141,12 @@ class GeoWebDataset(IterableDataset):
                  root,
                  n_bands,
                  augmentations,
-                 num_workers,
                  num_nodes=1,
                  num_shards=100,
                  imgs_per_shard=250):
         self.root = root
         self.n_bands = n_bands
         self.augmentations = augmentations
-        self.num_workers = num_workers
         self.num_nodes = num_nodes
         self.num_shards = num_shards
         self.imgs_per_shard = imgs_per_shard
@@ -225,7 +223,7 @@ class GeoWebDataset(IterableDataset):
         return iter(self.dataset)
 
     def __len__(self):
-        return self.imgs_per_shard * self.num_shards
+        return self.imgs_per_shard * self.num_shards * 100  # each image has 100 crops.
 
 
 class FakeDataset(Dataset):
