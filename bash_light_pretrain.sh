@@ -19,8 +19,6 @@ IN_CHANS=4
 # Optimizer Parameters
 WEIGHT_DECAY=0.05 # default - also, w/o weight decay there's nans - network collapse probs.
 LR=10e-4
-BLR=10e-4
-MIN_LR=10e-4
 #WARMUP_EPOCHS=10
 # Dataset Parameters
 DATA_PATH='/data_local_ssd/nrw_dop10_tars/nrw_dop10-{0000..0099}.tar'
@@ -43,8 +41,6 @@ python light_pretrain.py \
   --in_chans $IN_CHANS \
   --weight_decay $WEIGHT_DECAY \
   --lr $LR \
-  --blr $BLR \
-  --min_lr $MIN_LR \
   --data_path $DATA_PATH \
   --output_dir $OUTPUT_DIR \
   --num_workers $NUM_WORKERS

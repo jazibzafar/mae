@@ -54,11 +54,6 @@ def get_args_parser():
 
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (absolute lr)')
-    parser.add_argument('--blr', type=float, default=1e-3, metavar='LR',
-                        help='base learning rate: absolute_lr = base_lr * total_batch_size / 256')
-    parser.add_argument('--min_lr', type=float, default=0., metavar='LR',
-                        help='lower lr bound for cyclic schedulers that hit 0')
-
     # TODO: When adding an LR scheduler you can probably have warmup steps.
     # parser.add_argument('--warmup_epochs', type=int, default=40, metavar='N',
     #                     help='epochs to warmup LR')
@@ -111,16 +106,15 @@ class LitModel(L.LightningModule):
         param_groups = optim_factory.param_groups_weight_decay(self.model, self.weight_decay)
         optimizer = torch.optim.AdamW(param_groups, lr=self.lr, betas=(0.9, 0.95))
         scheduler = CosineAnnealingWarmRestarts(optimizer=optimizer,
-                                                T_0=500,
+                                                T_0=100,
                                                 T_mult=2)
-        dict_out = {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "train_loss"
-            }
+        lr_scheduler = {
+            'scheduler': scheduler,
+            'name': 'learning_rate',
+            'interval': 'step',
+            'frequency': 1
         }
-        return dict_out
+        return [optimizer], [lr_scheduler]
 
 
 def main(args):
