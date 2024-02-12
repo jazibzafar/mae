@@ -92,22 +92,15 @@ class LitModel(L.LightningModule):
         # It is independent of forward calls.
         loss, _, _ = self.model(batch, mask_ratio=self.mask_ratio)
         self.log("train_loss", loss)
-        # self.log("learning_rate", self.lr)
-        # msgs = [
-        #     f"Step {self.global_step}",
-        #     f"Loss {loss}"
-        # ]
-        #
-        # if self.global_step % 50 == 0:
-        #     logger.debug("|".join(msgs))
         return loss
 
     def configure_optimizers(self):
         param_groups = optim_factory.param_groups_weight_decay(self.model, self.weight_decay)
         optimizer = torch.optim.AdamW(param_groups, lr=self.lr, betas=(0.9, 0.95))
         scheduler = CosineAnnealingWarmRestarts(optimizer=optimizer,
-                                                T_0=100,
-                                                T_mult=2)
+                                                T_0=10000,
+                                                T_mult=3,
+                                                eta_min=1e-6)
         lr_scheduler = {
             'scheduler': scheduler,
             'name': 'learning_rate',
@@ -136,11 +129,15 @@ def main(args):
                                             in_chans=args.in_chans,
                                             norm_pix_loss=args.norm_pix_loss)
 
-    masked_autoencoder = LitModel(model, args.mask_ratio, args.weight_decay, args.lr)
+    compiled_mae = torch.compile(model)
+    masked_autoencoder = LitModel(compiled_mae, args.mask_ratio, args.weight_decay, args.lr)
+
+    # Pytorch compile
 
     # Callbacks
     checkpoint_callback = ModelCheckpoint(dirpath=args.output_dir,
-                                          every_n_train_steps=int(args.max_steps/3))
+                                          every_n_train_steps=int(args.max_steps/5),
+                                          save_last=True)
     lr_callback = LearningRateMonitor(logging_interval="step")
 
     # Logger
@@ -152,9 +149,10 @@ def main(args):
                         max_steps=args.max_steps,
                         log_every_n_steps=10,
                         default_root_dir=args.output_dir,
-                        profiler="simple",
+                        # profiler="simple",
                         enable_progress_bar=True,
                         logger=logger,
+                        precision="bf16-mixed",
                         callbacks=[checkpoint_callback, lr_callback])
 
     print("beginning the training.")

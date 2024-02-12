@@ -10,7 +10,7 @@ echo "Pretraining MAE"
 # Set the variables
 # Training Parameters
 BATCH_SIZE=128
-MAX_STEPS=5000
+MAX_STEPS=125000
 # Model Parameters
 MODEL='mae_vit_base_patch16' # default
 INPUT_SIZE=224
@@ -18,11 +18,11 @@ MASK_RATIO=0.6 # default 0.75
 IN_CHANS=4
 # Optimizer Parameters
 WEIGHT_DECAY=0.05 # default - also, w/o weight decay there's nans - network collapse probs.
-LR=10e-4
+LR=1e-4
 #WARMUP_EPOCHS=10
 # Dataset Parameters
 DATA_PATH='/data_local_ssd/nrw_dop10_tars/nrw_dop10-{0000..0099}.tar'
-OUTPUT_DIR='./experiment_test_070224/'
+OUTPUT_DIR='./baseline_240209/'
 DEVICE='cuda' # default
 RESUME="/home/jazib/projects/mae/experiment_baseline_050124/checkpoint-19.pth"
 #START_EPOCH=0
