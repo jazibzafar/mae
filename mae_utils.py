@@ -12,6 +12,7 @@ from osgeo import gdal
 import matplotlib.pyplot as plt
 from torch.utils.data import get_worker_info
 from itertools import islice
+from collections import OrderedDict
 
 
 def img_loader(path):
@@ -261,3 +262,22 @@ def show_image(image, title=''):
     plt.axis('off')
     return
 
+
+def remove_prefix(text, prefix):
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return text
+
+
+def model_remove_prefix(in_state_dict):
+    pairings = [
+        (src_key, remove_prefix(src_key, "model._orig_mod."))
+        for src_key in in_state_dict.keys()
+    ]
+    if all(src_key == dest_key for src_key, dest_key in pairings):
+        return
+    out_state_dict = {}
+    for src_key, dest_key in pairings:
+        print(f"{src_key}  ==>  {dest_key}")
+        out_state_dict[dest_key] = in_state_dict[src_key]
+    return OrderedDict(out_state_dict)

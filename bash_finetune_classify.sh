@@ -4,7 +4,7 @@ echo "Finetuning MAE"
 # Set the parameters
 
 BATCH_SIZE=32
-EPOCHS=50
+EPOCHS=100
 WARMUP_EPOCHS=10
 ACCUM_ITER=1
 # Model Parameters
@@ -12,18 +12,18 @@ MODEL='vit_base_patch16'
 INPUT_SIZE=96
 IN_CHANS=4
 # Optimizer parameters
-LR=10e-4
-BLR=10e-4
-MIN_LR=10e-4
+LR=1e-3
+BLR=1e-4
+MIN_LR=1e-5
 # Fine tuning parameters
 # Dataset parameters
-FINETUNE_PATH="/home/jazib/projects/mae/experiment_baseline_080124/checkpoint-49.pth"
+FINETUNE_PATH="/home/jazib/projects/mae/pretrain_models/vit_base_240209.ckpt"
 DATA_PATH="/home/jazib/projects/SelfSupervisedLearning/species_classification/"
 TRAIN_RATIO=0.1
 # NB_CLASSES=10
-OUTPUT_DIR="/home/jazib/projects/mae/finetune_class_080124b/"
-LOG_DIR="/home/jazib/projects/mae/finetune_class_080124b/"
-# RESUME="/home/jazib/projects/mae/finetune_class_2410d/checkpoint-49.pth"
+OUTPUT_DIR="/home/jazib/projects/mae/finetune_class_240213b/"
+LOG_DIR="/home/jazib/projects/mae/finetune_class_240213b/"
+# RESUME="/home/jazib/projects/mae/finetune_class_240213a/checkpoint-49.pth"
 START_EPOCH=0
 DEVICE="cuda"
 
