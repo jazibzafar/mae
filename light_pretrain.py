@@ -96,11 +96,10 @@ class LitModel(L.LightningModule):
 
     def configure_optimizers(self):
         param_groups = optim_factory.param_groups_weight_decay(self.model, self.weight_decay)
-        optimizer = torch.optim.AdamW(param_groups, lr=self.lr, betas=(0.9, 0.95))
+        optimizer = torch.optim.AdamW(param_groups, lr=self.lr, betas=(0.99, 0.995))  # default betas=(0.9. 0.95)
         scheduler = CosineAnnealingWarmRestarts(optimizer=optimizer,
                                                 T_0=10000,
-                                                T_mult=3,
-                                                eta_min=1e-6)
+                                                T_mult=3,)  # eta_min=1e-6)
         lr_scheduler = {
             'scheduler': scheduler,
             'name': 'learning_rate',
